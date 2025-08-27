@@ -21,11 +21,23 @@ import {
   Play,
   Wand2,
   Users,
-  Clock
+  Clock,
+  Key,
+  Plus,
+  X
 } from "lucide-react";
 
 interface TestConfigurationProps {
-  onStartTest: () => void;
+  onStartTest: (config: TestConfig) => void;
+}
+
+interface TestConfig {
+  chatbotType: string;
+  systemPrompt: string;
+  testCases: number;
+  conversationTurns: number;
+  apiKey: string;
+  customMetrics: string[];
 }
 
 const TestConfiguration = ({ onStartTest }: TestConfigurationProps) => {
@@ -33,6 +45,15 @@ const TestConfiguration = ({ onStartTest }: TestConfigurationProps) => {
   const [systemPrompt, setSystemPrompt] = useState("");
   const [testCases, setTestCases] = useState([5]);
   const [conversationTurns, setConversationTurns] = useState([3]);
+  const [apiKey, setApiKey] = useState("");
+  const [customMetrics, setCustomMetrics] = useState([
+    "Response Accuracy",
+    "Helpfulness", 
+    "Professionalism",
+    "Problem Resolution",
+    "User Satisfaction"
+  ]);
+  const [newMetric, setNewMetric] = useState("");
 
   const chatbotTypes = [
     { value: "customer-support", label: "Customer Support", icon: "🎧" },
@@ -69,6 +90,29 @@ const TestConfiguration = ({ onStartTest }: TestConfigurationProps) => {
     console.log("Generating custom metrics for", chatbotType);
   };
 
+  const addCustomMetric = () => {
+    if (newMetric.trim() && !customMetrics.includes(newMetric.trim())) {
+      setCustomMetrics([...customMetrics, newMetric.trim()]);
+      setNewMetric("");
+    }
+  };
+
+  const removeMetric = (index: number) => {
+    setCustomMetrics(customMetrics.filter((_, i) => i !== index));
+  };
+
+  const handleStartTest = () => {
+    const config: TestConfig = {
+      chatbotType,
+      systemPrompt,
+      testCases: testCases[0],
+      conversationTurns: conversationTurns[0],
+      apiKey,
+      customMetrics
+    };
+    onStartTest(config);
+  };
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -77,7 +121,11 @@ const TestConfiguration = ({ onStartTest }: TestConfigurationProps) => {
           <h2 className="text-2xl font-bold text-foreground">Test Configuration</h2>
           <p className="text-muted-foreground">Set up your chatbot testing parameters</p>
         </div>
-        <Button onClick={onStartTest} className="btn-hero gap-2">
+        <Button 
+          onClick={handleStartTest} 
+          className="btn-hero gap-2"
+          disabled={!chatbotType || !systemPrompt || !apiKey}
+        >
           <Play className="h-4 w-4" />
           Start Testing
         </Button>
@@ -149,6 +197,31 @@ const TestConfiguration = ({ onStartTest }: TestConfigurationProps) => {
             </CardContent>
           </Card>
 
+          {/* API Configuration */}
+          <Card className="metric-card">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Key className="h-5 w-5 text-primary" />
+                API Configuration
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="api-key">API Key</Label>
+                <Input
+                  id="api-key"
+                  type="password"
+                  placeholder="Enter your chatbot API key..."
+                  value={apiKey}
+                  onChange={(e) => setApiKey(e.target.value)}
+                />
+                <p className="text-xs text-muted-foreground">
+                  Required to connect to your chatbot service for testing
+                </p>
+              </div>
+            </CardContent>
+          </Card>
+
           {/* Test Parameters */}
           <Card className="metric-card">
             <CardHeader>
@@ -213,22 +286,35 @@ const TestConfiguration = ({ onStartTest }: TestConfigurationProps) => {
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="space-y-3">
-                {[
-                  "Response Accuracy",
-                  "Helpfulness", 
-                  "Professionalism",
-                  "Problem Resolution",
-                  "User Satisfaction"
-                ].map((metric, index) => (
+                {customMetrics.map((metric, index) => (
                   <div key={index} className="flex items-center justify-between p-3 rounded-lg bg-muted/20 border border-border/30">
                     <span className="text-sm font-medium">{metric}</span>
-                    <Badge variant="outline" className="text-xs">0.0-1.0</Badge>
+                    <div className="flex items-center gap-2">
+                      <Badge variant="outline" className="text-xs">0.0-1.0</Badge>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-6 w-6 p-0 hover:bg-destructive/20"
+                        onClick={() => removeMetric(index)}
+                      >
+                        <X className="h-3 w-3" />
+                      </Button>
+                    </div>
                   </div>
                 ))}
               </div>
-              <Button variant="outline" size="sm" className="w-full">
-                Customize Metrics
-              </Button>
+              
+              <div className="flex gap-2">
+                <Input
+                  placeholder="Add custom metric..."
+                  value={newMetric}
+                  onChange={(e) => setNewMetric(e.target.value)}
+                  onKeyPress={(e) => e.key === 'Enter' && addCustomMetric()}
+                />
+                <Button variant="outline" size="sm" onClick={addCustomMetric}>
+                  <Plus className="h-4 w-4" />
+                </Button>
+              </div>
             </CardContent>
           </Card>
 
@@ -250,6 +336,10 @@ const TestConfiguration = ({ onStartTest }: TestConfigurationProps) => {
                 <div className="flex justify-between text-sm">
                   <span className="text-muted-foreground">Turns:</span>
                   <span>{conversationTurns[0]}</span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span className="text-muted-foreground">Metrics:</span>
+                  <span>{customMetrics.length}</span>
                 </div>
                 <div className="flex justify-between text-sm">
                   <span className="text-muted-foreground">Est. Duration:</span>
